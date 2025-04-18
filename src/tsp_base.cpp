@@ -99,7 +99,7 @@ TSPGameState::TSPGameState(const std::string& board_str) {
             throw std::invalid_argument("Unknown element type.");
         }
         const auto el = static_cast<Element>(el_idx);
-        visited_flags.push_back(false);
+        visited_flags.push_back(el == Element::kCityUnvisited ? false : true);
         bool is_city = el == Element::kCityUnvisited;
         hash ^= is_city ? to_local_hash(rows * cols, Element::kCityUnvisited, agent_idx) : 0;
         board_is_city.push_back(is_city);

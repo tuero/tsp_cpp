@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <unordered_map>
+#include <unordered_set>
 
 using namespace tsp;
 
@@ -47,13 +48,24 @@ void print_state(const TSPGameState &state) {
     }
 }
 
+struct KeyHasher {
+    std::size_t operator()(const TSPGameState &s) const {
+        return s.get_hash();
+    }
+};
+
 void test_play() {
     std::string board_str;
     std::cout << "Enter board str: ";
     std::cin >> board_str;
 
+    std::unordered_set<uint64_t> seen_hashes;
+    std::unordered_set<TSPGameState, KeyHasher> seen_states;
+
     TSPGameState state(board_str);
     print_state(state);
+    seen_hashes.insert(state.get_hash());
+    seen_states.insert(state);
 
     std::string action_str;
     while (!state.is_solution()) {
@@ -62,6 +74,11 @@ void test_play() {
             state.apply_action(static_cast<Action>(ActionMap.at(action_str)));
         }
         print_state(state);
+        bool seen_hash = seen_hashes.find(state.get_hash()) != seen_hashes.end();
+        bool seen_state = seen_states.find(state) != seen_states.end();
+        std::cout << "Seen hash: " << seen_hash << ", seen state: " << seen_state << std::endl;
+        seen_hashes.insert(state.get_hash());
+        seen_states.insert(state);
     }
 }
 }    // namespace
