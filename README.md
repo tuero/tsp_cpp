@@ -44,3 +44,7 @@ conda install conda-forge::libstdcxx-ng
 ## Level Format
 Levels are expected to be formatted as `|` delimited strings, where the first 2 entries are the rows/columns of the level,
 then the following `rows * cols` entries are the element ID (see `Element` in `definitions.h`).
+
+```shell
+python scenario_create.py --export_path=. --num_train=20000 --num_test=100 --map_size=10 --num_cities=12 --add_walls
+```
