@@ -40,3 +40,7 @@ For example, if using anaconda
 ```shell
 conda install conda-forge::libstdcxx-ng
 ```
+
+## Level Format
+Levels are expected to be formatted as `|` delimited strings, where the first 2 entries are the rows/columns of the level,
+then the following `rows * cols` entries are the element ID (see `Element` in `definitions.h`).
