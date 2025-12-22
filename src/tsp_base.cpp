@@ -93,19 +93,24 @@ TSPGameState::TSPGameState(const std::string& board_str) {
     // Parse
     for (int i = 2; i < static_cast<int>(seglist.size()); ++i) {
         int el_idx = std::stoi(seglist[i]);
-        if (el_idx < 0 || el_idx > 3) {
+        if (el_idx < 0 || el_idx >= kNumElements) {
             std::cerr << board_str << std::endl;
             std::cerr << el_idx << std::endl;
             throw std::invalid_argument("Unknown element type.");
         }
         const auto el = static_cast<Element>(el_idx);
         visited_flags.push_back(el == Element::kCityUnvisited ? false : true);
-        bool is_city = el == Element::kCityUnvisited;
+        bool is_city = (el == Element::kCityUnvisited || el == Element::kAgentAtStartCity);
         hash ^= is_city ? to_local_hash(rows * cols, Element::kCityUnvisited, agent_idx) : 0;
         board_is_city.push_back(is_city);
         remaining_cities += is_city;
         board_is_wall.push_back(el == Element::kWall);
-        if (el == Element::kAgent) {
+        // If starting at a city, undo count for city remaining and set the starting city index
+        if (el == Element::kAgentAtStartCity) {
+            start_city_idx = i - 2;
+            --remaining_cities;
+        }
+        if (el == Element::kAgent || el == Element::kAgentAtStartCity) {
             if (agent_idx != -1) {
                 throw std::invalid_argument("More than one agent.");
             }

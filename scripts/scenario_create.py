@@ -39,10 +39,11 @@ kEmpty = 0
 kAgent = 1
 kWall = 2
 kCityUnvisited = 3
+kAgentAtStartCity = 7
 
 
 def create_map(args):
-    manager_dict, n, num_cities, add_walls, seed = args
+    manager_dict, n, num_cities, add_walls, start_at_city, seed = args
     gen = np.random.default_rng(seed)
 
     blocked_indices = set()
@@ -63,18 +64,25 @@ def create_map(args):
                 blocked_indices.add(idx)
 
     # Sample N cities
-    city_indices = gen.choice(
-        [i for i in range(n * n) if i not in blocked_indices],
-        size=num_cities,
-        replace=False,
+    city_indices = list(
+        gen.choice(
+            [i for i in range(n * n) if i not in blocked_indices],
+            size=num_cities,
+            replace=False,
+        )
     )
     for idx in city_indices:
         m[idx] = kCityUnvisited
         blocked_indices.add(idx)
 
     # place an agent
-    agent_idx = gen.choice([i for i in range(n * n) if i not in blocked_indices])
-    m[agent_idx] = kAgent
+    agent_indices = (
+        city_indices
+        if start_at_city
+        else [i for i in range(n * n) if i not in blocked_indices]
+    )
+    agent_idx = gen.choice(agent_indices)
+    m[agent_idx] = kAgentAtStartCity if start_at_city else kAgent
 
     # Make map str
     output_str = f"{n}|{n}|"
@@ -119,6 +127,12 @@ def main():
         action="store_true",
     )
     parser.add_argument(
+        "--start_at_city",
+        help="Flag to start agent at a city",
+        required=True,
+        action="store_true",
+    )
+    parser.add_argument(
         "--export_path", help="Export path for file", required=True, type=str
     )
     args = parser.parse_args()
@@ -134,6 +148,7 @@ def main():
                     args.map_size,
                     args.num_cities,
                     args.add_walls,
+                    args.start_at_city,
                     i,
                 )
                 for i in range(args.num_train + args.num_test)
