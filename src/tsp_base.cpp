@@ -89,6 +89,7 @@ TSPGameState::TSPGameState(const std::string& board_str) {
     if (seglist.size() != static_cast<std::size_t>(rows * cols) + 2) {
         throw std::invalid_argument("Supplied rows/cols does not match input board length.");
     }
+    is_deadlocked = false;
 
     // Parse
     for (int i = 2; i < static_cast<int>(seglist.size()); ++i) {
@@ -133,13 +134,14 @@ TSPGameState::TSPGameState(InternalState&& internal_state)
       reward_signal(internal_state.reward_signal),
       board_is_city(std::move(internal_state).board_is_city),
       visited_flags(std::move(internal_state).visited_flags),
-      board_is_wall(std::move(internal_state).board_is_wall) {}
+      board_is_wall(std::move(internal_state).board_is_wall),
+      is_deadlocked(internal_state.is_deadlocked) {}
 
 auto TSPGameState::operator==(const TSPGameState& other) const noexcept -> bool {
     return rows == other.rows && cols == other.cols && agent_idx == other.agent_idx &&
            start_city_idx == other.start_city_idx && remaining_cities == other.remaining_cities &&
            board_is_city == other.board_is_city && visited_flags == other.visited_flags &&
-           board_is_wall == other.board_is_wall;
+           board_is_wall == other.board_is_wall && is_deadlocked == other.is_deadlocked;
 }
 
 auto TSPGameState::operator!=(const TSPGameState& other) const noexcept -> bool {
@@ -173,6 +175,9 @@ void TSPGameState::apply_action(Action action) {
     bool on_city = board_is_city[static_cast<std::size_t>(agent_idx)];
     bool set_visited_city = on_city && !visited_flags[static_cast<std::size_t>(agent_idx)];
     bool set_start_city = on_city && start_city_idx == -1;
+    // Deadlocked if we revisit a city that is not starting city
+    is_deadlocked =
+        is_deadlocked || (on_city && visited_flags[static_cast<std::size_t>(agent_idx)] && agent_idx != start_city_idx);
     reward_signal = set_visited_city;
     remaining_cities -= set_visited_city;
     visited_flags[static_cast<std::size_t>(agent_idx)] = true;
@@ -187,7 +192,7 @@ void TSPGameState::apply_action(Action action) {
 }
 
 auto TSPGameState::is_solution() const noexcept -> bool {
-    return remaining_cities == 0 && agent_idx == start_city_idx;
+    return remaining_cities == 0 && agent_idx == start_city_idx && !is_deadlocked;
 }
 
 auto TSPGameState::observation_shape() const noexcept -> std::array<int, 3> {
@@ -345,6 +350,7 @@ auto operator<<(std::ostream& os, const TSPGameState& state) -> std::ostream& {
         os << "|" << std::endl;
     }
     print_horz_boarder();
+    std::cout << "is deadlocked " << state.is_deadlocked << std::endl;
     return os;
 }
 

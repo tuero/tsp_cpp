@@ -32,14 +32,15 @@ public:
         std::vector<bool> board_is_city;
         std::vector<bool> visited_flags;
         std::vector<bool> board_is_wall;
+        bool is_deadlocked;
     };
 
     TSPGameState() = delete;
-    TSPGameState(const std::string &board_str);
-    TSPGameState(InternalState &&internal_state);
+    TSPGameState(const std::string& board_str);
+    TSPGameState(InternalState&& internal_state);
 
-    bool operator==(const TSPGameState &other) const noexcept;
-    bool operator!=(const TSPGameState &other) const noexcept;
+    bool operator==(const TSPGameState& other) const noexcept;
+    bool operator!=(const TSPGameState& other) const noexcept;
 
     static inline std::string name = "tsp";
 
@@ -124,11 +125,11 @@ public:
      */
     [[nodiscard]] auto get_visited_city_indices() const noexcept -> std::vector<int>;
 
-    friend auto operator<<(std::ostream &os, const TSPGameState &state) -> std::ostream &;
+    friend auto operator<<(std::ostream& os, const TSPGameState& state) -> std::ostream&;
 
     [[nodiscard]] auto pack() const -> InternalState {
-        return {rows, cols,          agent_idx,     start_city_idx, remaining_cities,
-                hash, reward_signal, board_is_city, visited_flags,  board_is_wall};
+        return {rows,          cols,          agent_idx,     start_city_idx, remaining_cities, hash,
+                reward_signal, board_is_city, visited_flags, board_is_wall,  is_deadlocked};
     }
 
 private:
@@ -146,6 +147,7 @@ private:
     std::vector<bool> board_is_city;
     std::vector<bool> visited_flags;
     std::vector<bool> board_is_wall;
+    bool is_deadlocked = false;
 };
 
 }    // namespace tsp
