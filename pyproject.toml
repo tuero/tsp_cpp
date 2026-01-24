@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "pytsp"
-version = "0.1.0"
+version = "1.0.0"
 description = "Python TSP bindings"
 dependencies = ["numpy"]
 
@@ -12,5 +12,7 @@ dependencies = ["numpy"]
 wheel.packages = ["python/pytsp"]
 build.targets = ["pytsp"]
 cmake.build-type = "Release"
-cmake.args = ["-DCMAKE_CXX_FLAGS='-g -O2 -fno-omit-frame-pointer'"]
+cmake.args = [
+    "-DBUILD_PYTHON_MODULE=ON -DCMAKE_CXX_FLAGS='-g -O2 -fno-omit-frame-pointer'",
+]
 cmake.verbose = true

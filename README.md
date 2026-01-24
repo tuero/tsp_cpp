@@ -4,6 +4,38 @@ A C++ implementation of the TSP environment.
 
 ## Include to Your Project: CMake
 
+### VCPKG
+`tsp_cpp` is not part of the official registry for vcpkg,
+but is supported in my personal registry [here](https://github.com/tuero/vcpkg-registry).
+To add `tuero/vcpkg-registry` as a git registry to your vcpkg project:
+```json
+"registries": [
+...
+{
+    "kind": "git",
+    "repository": "https://github.com/tuero/vcpkg-registry",
+    "reference": "master",
+    "baseline": "<COMMIT_SHA>",
+    "packages": ["tsp"]
+}
+]
+...
+```
+where `<COMMIT_SHA>` is the 40-character git commit sha in the registry's repository (you can find 
+this by clicking on the latest commit [here](https://github.com/tuero/vcpkg-registry) and looking 
+at the URL.
+
+
+Then in your project cmake:
+```cmake
+cmake_minimum_required(VERSION 3.25)
+project(my_project LANGUAGES CXX)
+
+find_package(tsp CONFIG REQUIRED)
+add_executable(main main.cpp)
+target_link_libraries(main PRIVATE tsp::tsp)
+```
+
 ### FetchContent
 ```shell
 include(FetchContent)

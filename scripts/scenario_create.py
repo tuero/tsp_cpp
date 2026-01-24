@@ -63,6 +63,21 @@ def create_map(args):
                 m[idx] = kWall
                 blocked_indices.add(idx)
 
+    # Top left
+    blocked_indices.add(1)
+    blocked_indices.add(n)
+    # Top right
+    blocked_indices.add(n - 2)
+    blocked_indices.add(2 * n - 1)
+
+    # bottom left
+    blocked_indices.add(n * (n - 2))
+    blocked_indices.add(n * (n - 1) + 1)
+
+    # Top right
+    blocked_indices.add(n * (n - 1) - 1)
+    blocked_indices.add(n * n - 2)
+
     # Sample N cities
     city_indices = list(
         gen.choice(
