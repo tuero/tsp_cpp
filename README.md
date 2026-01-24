@@ -1,6 +1,10 @@
 # tsp_cpp
 
-A C++ implementation of the TSP environment.
+A C++ implementation of the TSP environment in a gridworld.
+
+There are two versions
+- `TSPGameState`: The default version will allow the agent to traverse over already visited cities
+- `TSPDeadlockGameState`: The deadlock version will deadlock if the agent traverses over already visited cities (unless its the start city)
 
 ## Include to Your Project: CMake
 

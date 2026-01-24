@@ -10,36 +10,35 @@
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(pytsp, m) {
-    m.doc() = "TSP environment module docs.";
-    using T = tsp::TSPGameState;
-
-    py::class_<T>(m, "TSPGameState")
-        .def(py::init<const std::string &>())
+template <typename T>
+void bind_storage(py::module& m, const std::string& name) {
+    py::class_<T>(m, name.c_str())
+        .def(py::init<const std::string&>())
         .def_readonly_static("name", &T::name)
         .def_readonly_static("num_actions", &tsp::kNumActions)
         .def(py::self == py::self)    // NOLINT (misc-redundant-expression)
         .def(py::self != py::self)    // NOLINT (misc-redundant-expression)
-        .def("__hash__", [](const T &self) { return self.get_hash(); })
-        .def("__copy__", [](const T &self) { return T(self); })
-        .def("__deepcopy__", [](const T &self, py::dict) { return T(self); })
+        .def("__hash__", [](const T& self) { return self.get_hash(); })
+        .def("__copy__", [](const T& self) { return T(self); })
+        .def("__deepcopy__", [](const T& self, py::dict) { return T(self); })
         .def("__repr__",
-             [](const T &self) {
+             [](const T& self) {
                  std::stringstream stream;
                  stream << self;
                  return stream.str();
              })
         .def(py::pickle(
-            [](const T &self) {    // __getstate__
+            [](const T& self) {    // __getstate__
                 auto s = self.pack();
                 return py::make_tuple(s.rows, s.cols, s.agent_idx, s.start_city_idx, s.remaining_cities, s.hash,
-                                      s.reward_signal, s.board_is_city, s.visited_flags, s.board_is_wall);
+                                      s.reward_signal, s.board_is_city, s.visited_flags, s.board_is_wall,
+                                      s.is_deadlocked);
             },
             [](py::tuple t) -> T {    // __setstate__
-                if (t.size() != 10) {
+                if (t.size() != 11) {
                     throw std::runtime_error("Invalid state");
                 }
-                T::InternalState s;
+                typename T::InternalState s;
                 s.rows = t[0].cast<int>();                           // NOLINT(*-magic-numbers)
                 s.cols = t[1].cast<int>();                           // NOLINT(*-magic-numbers)
                 s.agent_idx = t[2].cast<int>();                      // NOLINT(*-magic-numbers)
@@ -50,10 +49,11 @@ PYBIND11_MODULE(pytsp, m) {
                 s.board_is_city = t[7].cast<std::vector<bool>>();    // NOLINT(*-magic-numbers)
                 s.visited_flags = t[8].cast<std::vector<bool>>();    // NOLINT(*-magic-numbers)
                 s.board_is_wall = t[9].cast<std::vector<bool>>();    // NOLINT(*-magic-numbers)
+                s.is_deadlocked = t[10].cast<bool>();                // NOLINT(*-magic-numbers)
                 return {std::move(s)};
             }))
         .def("apply_action",
-             [](T &self, int action) {
+             [](T& self, int action) {
                  if (action < 0 || action >= T::action_space_size()) {
                      throw std::invalid_argument("Invalid action.");
                  }
@@ -63,13 +63,13 @@ PYBIND11_MODULE(pytsp, m) {
         .def("is_terminal", &T::is_solution)
         .def("observation_shape", &T::observation_shape)
         .def("get_observation",
-             [](const T &self) {
+             [](const T& self) {
                  py::array_t<float> out = py::cast(self.get_observation());
                  return out.reshape(self.observation_shape());
              })
         .def("image_shape", &T::image_shape)
         .def("to_image",
-             [](T &self) {
+             [](T& self) {
                  py::array_t<uint8_t> out = py::cast(self.to_image());
                  const auto obs_shape = self.observation_shape();
                  return out.reshape({static_cast<py::ssize_t>(obs_shape[1] * tsp::SPRITE_HEIGHT),
@@ -81,4 +81,11 @@ PYBIND11_MODULE(pytsp, m) {
         .def("get_start_city_index", &T::get_start_city_index)
         .def("get_unvisited_city_indices", &T::get_unvisited_city_indices)
         .def("get_visited_city_indices", &T::get_visited_city_indices);
+}
+
+PYBIND11_MODULE(pytsp, m) {
+    m.doc() = "TSP environment module docs.";
+
+    bind_storage<tsp::TSPGameState>(m, "TSPGameState");
+    bind_storage<tsp::TSPDeadlockGameState>(m, "TSPDeadlockGameState");
 }
