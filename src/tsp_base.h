@@ -18,7 +18,10 @@ constexpr int SPRITE_CHANNELS = 3;
 constexpr int SPRITE_DATA_LEN_PER_ROW = SPRITE_WIDTH * SPRITE_CHANNELS;
 constexpr int SPRITE_DATA_LEN = SPRITE_WIDTH * SPRITE_HEIGHT * SPRITE_CHANNELS;
 
-class TSPGameState {
+namespace detail {
+
+template <bool IsDeadlock>
+class TSPGameStateImpl {
 public:
     // Internal use for packing/unpacking with pybind11 pickle
     struct InternalState {
@@ -35,12 +38,12 @@ public:
         bool is_deadlocked;
     };
 
-    TSPGameState() = delete;
-    TSPGameState(const std::string& board_str);
-    TSPGameState(InternalState&& internal_state);
+    TSPGameStateImpl() = delete;
+    TSPGameStateImpl(const std::string& board_str);
+    TSPGameStateImpl(InternalState&& internal_state);
 
-    bool operator==(const TSPGameState& other) const noexcept;
-    bool operator!=(const TSPGameState& other) const noexcept;
+    bool operator==(const TSPGameStateImpl& other) const noexcept;
+    bool operator!=(const TSPGameStateImpl& other) const noexcept;
 
     static inline std::string name = "tsp";
 
@@ -125,7 +128,8 @@ public:
      */
     [[nodiscard]] auto get_visited_city_indices() const noexcept -> std::vector<int>;
 
-    friend auto operator<<(std::ostream& os, const TSPGameState& state) -> std::ostream&;
+    template <bool U>
+    friend auto operator<<(std::ostream& os, const TSPGameStateImpl<U>& state) -> std::ostream&;
 
     [[nodiscard]] auto pack() const -> InternalState {
         return {rows,          cols,          agent_idx,     start_city_idx, remaining_cities, hash,
@@ -149,6 +153,11 @@ private:
     std::vector<bool> board_is_wall;
     bool is_deadlocked = false;
 };
+
+}    // namespace detail
+
+using TSPGameState = detail::TSPGameStateImpl<false>;
+using TSPDeadlockGameState = detail::TSPGameStateImpl<true>;
 
 }    // namespace tsp
 

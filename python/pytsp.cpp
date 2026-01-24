@@ -10,11 +10,9 @@
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(pytsp, m) {
-    m.doc() = "TSP environment module docs.";
-    using T = tsp::TSPGameState;
-
-    py::class_<T>(m, "TSPGameState")
+template <typename T>
+void bind_storage(py::module& m, const std::string& name) {
+    py::class_<T>(m, name.c_str())
         .def(py::init<const std::string&>())
         .def_readonly_static("name", &T::name)
         .def_readonly_static("num_actions", &tsp::kNumActions)
@@ -40,7 +38,7 @@ PYBIND11_MODULE(pytsp, m) {
                 if (t.size() != 11) {
                     throw std::runtime_error("Invalid state");
                 }
-                T::InternalState s;
+                typename T::InternalState s;
                 s.rows = t[0].cast<int>();                           // NOLINT(*-magic-numbers)
                 s.cols = t[1].cast<int>();                           // NOLINT(*-magic-numbers)
                 s.agent_idx = t[2].cast<int>();                      // NOLINT(*-magic-numbers)
@@ -83,4 +81,11 @@ PYBIND11_MODULE(pytsp, m) {
         .def("get_start_city_index", &T::get_start_city_index)
         .def("get_unvisited_city_indices", &T::get_unvisited_city_indices)
         .def("get_visited_city_indices", &T::get_visited_city_indices);
+}
+
+PYBIND11_MODULE(pytsp, m) {
+    m.doc() = "TSP environment module docs.";
+
+    bind_storage<tsp::TSPGameState>(m, "TSPGameState");
+    bind_storage<tsp::TSPDeadlockGameState>(m, "TSPDeadlockGameState");
 }
