@@ -3,7 +3,9 @@
 
 #include <array>
 #include <cstdint>
+#include <format>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -160,5 +162,23 @@ using TSPGameState = detail::TSPGameStateImpl<false>;
 using TSPDeadlockGameState = detail::TSPGameStateImpl<true>;
 
 }    // namespace tsp
+
+template <>
+struct std::formatter<tsp::TSPDeadlockGameState> : std::formatter<std::string> {
+    auto format(tsp::TSPDeadlockGameState s, format_context& ctx) const {
+        std::ostringstream oss;
+        oss << s;
+        return formatter<string>::format(std::format("{}", oss.str()), ctx);
+    }
+};
+
+template <>
+struct std::formatter<tsp::TSPGameState> : std::formatter<std::string> {
+    auto format(tsp::TSPGameState s, format_context& ctx) const {
+        std::ostringstream oss;
+        oss << s;
+        return formatter<string>::format(std::format("{}", oss.str()), ctx);
+    }
+};
 
 #endif    // TSP_BASE_H_

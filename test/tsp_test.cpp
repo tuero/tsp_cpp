@@ -11,18 +11,18 @@ const std::unordered_map<std::string, int> ActionMap{
     {"w", 0}, {"d", 1}, {"s", 2}, {"a", 3}, {"e", 4},
 };
 
-void print_state(const TSPGameState &state) {
-    std::cout << state << std::endl;
+void print_state(const TSPGameState& state) {
+    std::cout << std::format("{}", state) << std::endl;
     std::cout << state.get_hash() << std::endl;
     std::cout << "Reward signal: " << state.get_reward_signal() << std::endl;
     std::cout << "Start city: " << state.get_start_city_index() << std::endl;
     std::cout << "Unvisited: ";
-    for (const auto &v : state.get_unvisited_city_indices()) {
+    for (const auto& v : state.get_unvisited_city_indices()) {
         std::cout << v << " ";
     }
     std::cout << std::endl;
     std::cout << "Visited: ";
-    for (const auto &v : state.get_visited_city_indices()) {
+    for (const auto& v : state.get_visited_city_indices()) {
         std::cout << v << " ";
     }
     std::cout << std::endl;
@@ -34,7 +34,7 @@ void print_state(const TSPGameState &state) {
             int idx = -1;
             int count = 0;
             for (int _c = 0; _c < c; ++_c) {
-                if (obs[_c * (h * w) + _h * w + _w] == 1) {
+                if (obs[static_cast<std::size_t>(_c * (h * w) + _h * w + _w)] == 1) {
                     idx = _c;
                     ++count;
                 }
@@ -49,7 +49,7 @@ void print_state(const TSPGameState &state) {
 }
 
 struct KeyHasher {
-    std::size_t operator()(const TSPGameState &s) const {
+    std::size_t operator()(const TSPGameState& s) const {
         return s.get_hash();
     }
 };

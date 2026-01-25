@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.23)
 
-project(tsp VERSION 1.0.0)
+project(tsp VERSION 1.0.1)
 
 include(FetchContent)
 
@@ -34,7 +34,7 @@ set_target_properties(tsp PROPERTIES
 )
 target_include_directories(
     tsp PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>")
-target_compile_features(tsp PUBLIC cxx_std_17)
+target_compile_features(tsp PUBLIC cxx_std_20)
 target_sources(tsp PRIVATE ${TSP_SOURCES})
 
 

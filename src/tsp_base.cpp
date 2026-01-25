@@ -62,7 +62,7 @@ constexpr uint64_t SPLIT64_C1 = 0x9E3779B97f4A7C15;
 constexpr uint64_t SPLIT64_C2 = 0xBF58476D1CE4E5B9;
 constexpr uint64_t SPLIT64_C3 = 0x94D049BB133111EB;
 auto to_local_hash(int flat_size, Element el, int offset) noexcept -> uint64_t {
-    uint64_t seed = (flat_size * static_cast<int>(el)) + offset;
+    auto seed = static_cast<uint64_t>((flat_size * static_cast<int>(el)) + offset);
     uint64_t result = seed + SPLIT64_C1;
     result = (result ^ (result >> SPLIT64_S1)) * SPLIT64_C2;
     result = (result ^ (result >> SPLIT64_S2)) * SPLIT64_C3;
@@ -96,7 +96,7 @@ TSPGameStateImpl<IsDeadlock>::TSPGameStateImpl(const std::string& board_str) {
 
     // Parse
     for (int i = 2; i < static_cast<int>(seglist.size()); ++i) {
-        int el_idx = std::stoi(seglist[i]);
+        int el_idx = std::stoi(seglist[static_cast<std::size_t>(i)]);
         if (el_idx < 0 || el_idx >= kNumElements) {
             std::cerr << board_str << std::endl;
             std::cerr << el_idx << std::endl;
@@ -164,7 +164,7 @@ void TSPGameStateImpl<IsDeadlock>::apply_action(Action action) {
 
     // Do nothing if move puts agent out of bounds or into wall
     const auto& [new_idx, in_bounds] = IndexAndBoundsCheck(action);
-    if (!in_bounds || board_is_wall[new_idx]) {
+    if (!in_bounds || board_is_wall[static_cast<std::size_t>(new_idx)]) {
         return;
     }
 
@@ -216,23 +216,21 @@ auto TSPGameStateImpl<IsDeadlock>::observation_shape() const noexcept -> std::ar
 
 template <bool IsDeadlock>
 auto TSPGameStateImpl<IsDeadlock>::get_observation() const noexcept -> std::vector<float> {
-    const auto channel_length = rows * cols;
+    const auto channel_length = static_cast<std::size_t>(rows * cols);
     std::vector<float> obs(kNumChannels * channel_length, 0);
 
     bool on_city = board_is_city[static_cast<std::size_t>(agent_idx)];
     bool on_start_city = agent_idx == start_city_idx;
 
     // Fill board (elements which are not empty)
-    for (int i = 0; i < channel_length; ++i) {
+    for (std::size_t i = 0; i < channel_length; ++i) {
         auto el = Element::kEmpty;
-        el = board_is_wall[static_cast<std::size_t>(i)] ? Element::kWall : el;
-        el = board_is_city[static_cast<std::size_t>(i)]
-                 ? (visited_flags[static_cast<std::size_t>(i)] ? Element::kCityVisited : Element::kCityUnvisited)
-                 : el;
-        el = (i == start_city_idx) ? Element::kStartCity : el;
-        el = (i == agent_idx) ? Element::kAgent : el;
-        el = (i == agent_idx && on_city) ? Element::kAgentAtCity : el;
-        el = (i == agent_idx && on_start_city) ? Element::kAgentAtStartCity : el;
+        el = board_is_wall[i] ? Element::kWall : el;
+        el = board_is_city[i] ? (visited_flags[i] ? Element::kCityVisited : Element::kCityUnvisited) : el;
+        el = (i == static_cast<std::size_t>(start_city_idx)) ? Element::kStartCity : el;
+        el = (i == static_cast<std::size_t>(agent_idx)) ? Element::kAgent : el;
+        el = (i == static_cast<std::size_t>(agent_idx) && on_city) ? Element::kAgentAtCity : el;
+        el = (i == static_cast<std::size_t>(agent_idx) && on_start_city) ? Element::kAgentAtStartCity : el;
         obs[static_cast<std::size_t>(el) * channel_length + i] = 1;
     }
     return obs;
@@ -260,7 +258,7 @@ void fill_sprite(std::vector<uint8_t>& img, int h, int w, int cols, const Pixel&
 
 template <bool IsDeadlock>
 auto TSPGameStateImpl<IsDeadlock>::to_image() const noexcept -> std::vector<uint8_t> {
-    const auto channel_length = rows * cols;
+    const auto channel_length = static_cast<std::size_t>(rows * cols);
     std::vector<uint8_t> img(channel_length * SPRITE_DATA_LEN, 0);
 
     bool on_city = board_is_city[static_cast<std::size_t>(agent_idx)];
