@@ -1,4 +1,4 @@
-#include "tsp_base.h"
+#include <tsp/tsp.h>
 
 #include <array>
 #include <cassert>

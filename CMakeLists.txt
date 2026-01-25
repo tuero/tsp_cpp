@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.23)
 
-project(tsp VERSION 1.0.1)
+project(tsp VERSION 1.0.2)
 
 include(FetchContent)
 
@@ -19,9 +19,10 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Sources
 set(TSP_SOURCES
-    src/definitions.h
+    include/tsp/definitions.h
+    include/tsp/tsp.h
+    include/tsp/tsp_base.h
     src/tsp_base.cpp 
-    src/tsp_base.h 
 )
 
 # CPP library
