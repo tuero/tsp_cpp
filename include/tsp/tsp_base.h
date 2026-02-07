@@ -22,7 +22,21 @@ constexpr int SPRITE_DATA_LEN = SPRITE_WIDTH * SPRITE_HEIGHT * SPRITE_CHANNELS;
 
 namespace detail {
 
-template <bool IsDeadlock>
+// Static string
+template <std::size_t N>
+struct StaticString {
+    std::array<char, N + 1> data = {};
+
+    constexpr StaticString(const char (&input)[N + 1]) {    // NOLINT(*-avoid-c-arrays)
+        std::ranges::copy_n(input, N + 1, data.begin());
+    }
+};
+
+// Deduction guide
+template <std::size_t N>
+StaticString(const char (&)[N]) -> StaticString<N - 1>;    // NOLINT(*-avoid-c-arrays)
+
+template <bool IsDeadlock, StaticString name_str>
 class TSPGameStateImpl {
 public:
     // Internal use for packing/unpacking with pybind11 pickle
@@ -47,7 +61,7 @@ public:
     bool operator==(const TSPGameStateImpl& other) const noexcept;
     bool operator!=(const TSPGameStateImpl& other) const noexcept;
 
-    static inline std::string name = "tsp";
+    static inline std::string name{name_str.data.data(), name_str.data.size() - 1};
 
     /**
      * Apply the action to the current state, and set the reward and signals.
@@ -130,8 +144,8 @@ public:
      */
     [[nodiscard]] auto get_visited_city_indices() const noexcept -> std::vector<int>;
 
-    template <bool U>
-    friend auto operator<<(std::ostream& os, const TSPGameStateImpl<U>& state) -> std::ostream&;
+    template <bool U, StaticString S>
+    friend auto operator<<(std::ostream& os, const TSPGameStateImpl<U, S>& state) -> std::ostream&;
 
     [[nodiscard]] auto pack() const -> InternalState {
         return {rows,          cols,          agent_idx,     start_city_idx, remaining_cities, hash,
@@ -158,14 +172,14 @@ private:
 
 }    // namespace detail
 
-using TSPGameState = detail::TSPGameStateImpl<false>;
-using TSPDeadlockGameState = detail::TSPGameStateImpl<true>;
+using TSPGameState = detail::TSPGameStateImpl<false, "tsp">;
+using TSPDeadlockGameState = detail::TSPGameStateImpl<true, "tsp_deadlock">;
 
 }    // namespace tsp
 
 template <>
 struct std::formatter<tsp::TSPDeadlockGameState> : std::formatter<std::string> {
-    auto format(tsp::TSPDeadlockGameState s, format_context& ctx) const {
+    auto format(const tsp::TSPDeadlockGameState& s, format_context& ctx) const {
         std::ostringstream oss;
         oss << s;
         return formatter<string>::format(std::format("{}", oss.str()), ctx);
@@ -174,7 +188,7 @@ struct std::formatter<tsp::TSPDeadlockGameState> : std::formatter<std::string> {
 
 template <>
 struct std::formatter<tsp::TSPGameState> : std::formatter<std::string> {
-    auto format(tsp::TSPGameState s, format_context& ctx) const {
+    auto format(const tsp::TSPGameState& s, format_context& ctx) const {
         std::ostringstream oss;
         oss << s;
         return formatter<string>::format(std::format("{}", oss.str()), ctx);

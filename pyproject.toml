@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "pytsp"
-version = "1.0.2"
+version = "1.0.3"
 description = "Python TSP bindings"
 dependencies = ["numpy"]
 

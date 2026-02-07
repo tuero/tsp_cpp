@@ -73,8 +73,8 @@ auto to_local_hash(int flat_size, Element el, int offset) noexcept -> uint64_t {
 
 namespace detail {
 
-template <bool IsDeadlock>
-TSPGameStateImpl<IsDeadlock>::TSPGameStateImpl(const std::string& board_str) {
+template <bool IsDeadlock, StaticString name_str>
+TSPGameStateImpl<IsDeadlock, name_str>::TSPGameStateImpl(const std::string& board_str) {
     std::stringstream board_ss(board_str);
     std::string segment;
     std::vector<std::string> seglist;
@@ -127,8 +127,8 @@ TSPGameStateImpl<IsDeadlock>::TSPGameStateImpl(const std::string& board_str) {
     }
 }
 
-template <bool IsDeadlock>
-TSPGameStateImpl<IsDeadlock>::TSPGameStateImpl(InternalState&& internal_state)
+template <bool IsDeadlock, StaticString name_str>
+TSPGameStateImpl<IsDeadlock, name_str>::TSPGameStateImpl(InternalState&& internal_state)
     : rows(internal_state.rows),
       cols(internal_state.cols),
       agent_idx(internal_state.agent_idx),
@@ -141,16 +141,16 @@ TSPGameStateImpl<IsDeadlock>::TSPGameStateImpl(InternalState&& internal_state)
       board_is_wall(std::move(internal_state).board_is_wall),
       is_deadlocked(internal_state.is_deadlocked) {}
 
-template <bool IsDeadlock>
-auto TSPGameStateImpl<IsDeadlock>::operator==(const TSPGameStateImpl& other) const noexcept -> bool {
+template <bool IsDeadlock, StaticString name_str>
+auto TSPGameStateImpl<IsDeadlock, name_str>::operator==(const TSPGameStateImpl& other) const noexcept -> bool {
     return rows == other.rows && cols == other.cols && agent_idx == other.agent_idx &&
            start_city_idx == other.start_city_idx && remaining_cities == other.remaining_cities &&
            board_is_city == other.board_is_city && visited_flags == other.visited_flags &&
            board_is_wall == other.board_is_wall && is_deadlocked == other.is_deadlocked;
 }
 
-template <bool IsDeadlock>
-auto TSPGameStateImpl<IsDeadlock>::operator!=(const TSPGameStateImpl& other) const noexcept -> bool {
+template <bool IsDeadlock, StaticString name_str>
+auto TSPGameStateImpl<IsDeadlock, name_str>::operator!=(const TSPGameStateImpl& other) const noexcept -> bool {
     return !(*this == other);
 }
 
@@ -158,8 +158,8 @@ auto TSPGameStateImpl<IsDeadlock>::operator!=(const TSPGameStateImpl& other) con
 
 // ---------------------------------------------------------------------------
 
-template <bool IsDeadlock>
-void TSPGameStateImpl<IsDeadlock>::apply_action(Action action) {
+template <bool IsDeadlock, StaticString name_str>
+void TSPGameStateImpl<IsDeadlock, name_str>::apply_action(Action action) {
     reward_signal = 0;
 
     // Do nothing if move puts agent out of bounds or into wall
@@ -200,8 +200,8 @@ void TSPGameStateImpl<IsDeadlock>::apply_action(Action action) {
     hash ^= to_local_hash(rows * cols, get_agent_type(), agent_idx);
 }
 
-template <bool IsDeadlock>
-auto TSPGameStateImpl<IsDeadlock>::is_solution() const noexcept -> bool {
+template <bool IsDeadlock, StaticString name_str>
+auto TSPGameStateImpl<IsDeadlock, name_str>::is_solution() const noexcept -> bool {
     if constexpr (IsDeadlock) {
         return remaining_cities == 0 && agent_idx == start_city_idx && !is_deadlocked;
     } else {
@@ -209,13 +209,13 @@ auto TSPGameStateImpl<IsDeadlock>::is_solution() const noexcept -> bool {
     }
 }
 
-template <bool IsDeadlock>
-auto TSPGameStateImpl<IsDeadlock>::observation_shape() const noexcept -> std::array<int, 3> {
+template <bool IsDeadlock, StaticString name_str>
+auto TSPGameStateImpl<IsDeadlock, name_str>::observation_shape() const noexcept -> std::array<int, 3> {
     return {kNumChannels, cols, rows};
 }
 
-template <bool IsDeadlock>
-auto TSPGameStateImpl<IsDeadlock>::get_observation() const noexcept -> std::vector<float> {
+template <bool IsDeadlock, StaticString name_str>
+auto TSPGameStateImpl<IsDeadlock, name_str>::get_observation() const noexcept -> std::vector<float> {
     const auto channel_length = static_cast<std::size_t>(rows * cols);
     std::vector<float> obs(kNumChannels * channel_length, 0);
 
@@ -236,8 +236,8 @@ auto TSPGameStateImpl<IsDeadlock>::get_observation() const noexcept -> std::vect
     return obs;
 }
 
-template <bool IsDeadlock>
-auto TSPGameStateImpl<IsDeadlock>::image_shape() const noexcept -> std::array<int, 3> {
+template <bool IsDeadlock, StaticString name_str>
+auto TSPGameStateImpl<IsDeadlock, name_str>::image_shape() const noexcept -> std::array<int, 3> {
     return {rows * SPRITE_HEIGHT, cols * SPRITE_WIDTH, SPRITE_CHANNELS};
 }
 
@@ -256,8 +256,8 @@ void fill_sprite(std::vector<uint8_t>& img, int h, int w, int cols, const Pixel&
 }
 }    // namespace
 
-template <bool IsDeadlock>
-auto TSPGameStateImpl<IsDeadlock>::to_image() const noexcept -> std::vector<uint8_t> {
+template <bool IsDeadlock, StaticString name_str>
+auto TSPGameStateImpl<IsDeadlock, name_str>::to_image() const noexcept -> std::vector<uint8_t> {
     const auto channel_length = static_cast<std::size_t>(rows * cols);
     std::vector<uint8_t> img(channel_length * SPRITE_DATA_LEN, 0);
 
@@ -283,28 +283,28 @@ auto TSPGameStateImpl<IsDeadlock>::to_image() const noexcept -> std::vector<uint
     return img;
 }
 
-template <bool IsDeadlock>
-auto TSPGameStateImpl<IsDeadlock>::get_reward_signal() const noexcept -> uint64_t {
+template <bool IsDeadlock, StaticString name_str>
+auto TSPGameStateImpl<IsDeadlock, name_str>::get_reward_signal() const noexcept -> uint64_t {
     return reward_signal;
 }
 
-template <bool IsDeadlock>
-auto TSPGameStateImpl<IsDeadlock>::get_hash() const noexcept -> uint64_t {
+template <bool IsDeadlock, StaticString name_str>
+auto TSPGameStateImpl<IsDeadlock, name_str>::get_hash() const noexcept -> uint64_t {
     return hash;
 }
 
-template <bool IsDeadlock>
-auto TSPGameStateImpl<IsDeadlock>::get_agent_index() const noexcept -> int {
+template <bool IsDeadlock, StaticString name_str>
+auto TSPGameStateImpl<IsDeadlock, name_str>::get_agent_index() const noexcept -> int {
     return agent_idx;
 }
 
-template <bool IsDeadlock>
-auto TSPGameStateImpl<IsDeadlock>::get_start_city_index() const noexcept -> int {
+template <bool IsDeadlock, StaticString name_str>
+auto TSPGameStateImpl<IsDeadlock, name_str>::get_start_city_index() const noexcept -> int {
     return start_city_idx;
 }
 
-template <bool IsDeadlock>
-auto TSPGameStateImpl<IsDeadlock>::get_unvisited_city_indices() const noexcept -> std::vector<int> {
+template <bool IsDeadlock, StaticString name_str>
+auto TSPGameStateImpl<IsDeadlock, name_str>::get_unvisited_city_indices() const noexcept -> std::vector<int> {
     std::vector<int> indices;
     for (int i = 0; i < rows * cols; ++i) {
         bool is_city = board_is_city[static_cast<std::size_t>(i)];
@@ -316,8 +316,8 @@ auto TSPGameStateImpl<IsDeadlock>::get_unvisited_city_indices() const noexcept -
     return indices;
 }
 
-template <bool IsDeadlock>
-auto TSPGameStateImpl<IsDeadlock>::get_visited_city_indices() const noexcept -> std::vector<int> {
+template <bool IsDeadlock, StaticString name_str>
+auto TSPGameStateImpl<IsDeadlock, name_str>::get_visited_city_indices() const noexcept -> std::vector<int> {
     std::vector<int> indices;
     for (int i = 0; i < rows * cols; ++i) {
         bool is_city = board_is_city[static_cast<std::size_t>(i)];
@@ -331,8 +331,8 @@ auto TSPGameStateImpl<IsDeadlock>::get_visited_city_indices() const noexcept -> 
 
 // ---------------------------------------------------------------------------
 
-template <bool IsDeadlock>
-auto TSPGameStateImpl<IsDeadlock>::IndexAndBoundsCheck(Action action) const noexcept -> std::pair<int, bool> {
+template <bool IsDeadlock, StaticString name_str>
+auto TSPGameStateImpl<IsDeadlock, name_str>::IndexAndBoundsCheck(Action action) const noexcept -> std::pair<int, bool> {
     auto col = agent_idx % cols;
     auto row = (agent_idx - col) / cols;
     const auto& offsets = kActionOffsets[static_cast<std::size_t>(action)];    // NOLINT(*-bounds-constant-array-index)
@@ -342,8 +342,8 @@ auto TSPGameStateImpl<IsDeadlock>::IndexAndBoundsCheck(Action action) const noex
     return {(cols * row) + col, in_bounds};
 }
 
-template <bool IsDeadlock>
-auto operator<<(std::ostream& os, const detail::TSPGameStateImpl<IsDeadlock>& state) -> std::ostream& {
+template <bool IsDeadlock, StaticString name_str>
+auto operator<<(std::ostream& os, const detail::TSPGameStateImpl<IsDeadlock, name_str>& state) -> std::ostream& {
     const auto print_horz_boarder = [&]() {
         for (int w = 0; w < state.cols + 2; ++w) {
             os << "-";
@@ -379,12 +379,12 @@ auto operator<<(std::ostream& os, const detail::TSPGameStateImpl<IsDeadlock>& st
     std::cout << "is deadlocked " << state.is_deadlocked << std::endl;
     return os;
 }
-template std::ostream& operator<<(std::ostream&, const detail::TSPGameStateImpl<false>&);
-template std::ostream& operator<<(std::ostream&, const detail::TSPGameStateImpl<true>&);
+template std::ostream& operator<<(std::ostream&, const detail::TSPGameStateImpl<false, "tsp">&);
+template std::ostream& operator<<(std::ostream&, const detail::TSPGameStateImpl<true, "tsp_deadlock">&);
 
 }    // namespace detail
 
-template class detail::TSPGameStateImpl<false>;
-template class detail::TSPGameStateImpl<true>;
+template class detail::TSPGameStateImpl<false, "tsp">;
+template class detail::TSPGameStateImpl<true, "tsp_deadlock">;
 
 }    // namespace tsp

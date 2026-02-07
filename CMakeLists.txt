@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.23)
 
-project(tsp VERSION 1.0.2)
+project(tsp VERSION 1.0.3)
 
 include(FetchContent)
 
