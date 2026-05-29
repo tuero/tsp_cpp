@@ -2,6 +2,7 @@
 #define TSP_BASE_H_
 
 #include <tsp/definitions.h>
+#include <tsp/zobrist.h>
 
 #include <array>
 #include <cstdint>
@@ -46,7 +47,7 @@ public:
         int agent_idx;
         int start_city_idx;
         int remaining_cities;
-        uint64_t hash;
+        Zobrist256 hash;
         uint64_t reward_signal;
         std::vector<bool> board_is_city;
         std::vector<bool> visited_flags;
@@ -121,6 +122,12 @@ public:
     [[nodiscard]] auto get_hash() const noexcept -> uint64_t;
 
     /**
+     * Get the 256-bit hash representation for the current state.
+     * @return hash value
+     */
+    [[nodiscard]] auto get_hash256() const noexcept -> Zobrist256;
+
+    /**
      * Get the agent index position, even if in exit
      * @return Agent index
      */
@@ -162,7 +169,7 @@ private:
     int agent_idx = -1;
     int start_city_idx = -1;
     int remaining_cities = 0;
-    uint64_t hash = 0;
+    Zobrist256 hash{};
     uint64_t reward_signal = 0;
     std::vector<bool> board_is_city;
     std::vector<bool> visited_flags;

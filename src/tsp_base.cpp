@@ -53,22 +53,6 @@ const std::unordered_map<Element, Pixel> kElementToPixelMap{
     {Element::kAgentAtCity, YELLOW}, {Element::kAgentAtStartCity, MAGENTA},
 };
 
-// https://en.wikipedia.org/wiki/Xorshift
-// Portable RNG Seed
-constexpr uint64_t SPLIT64_S1 = 30;
-constexpr uint64_t SPLIT64_S2 = 27;
-constexpr uint64_t SPLIT64_S3 = 31;
-constexpr uint64_t SPLIT64_C1 = 0x9E3779B97f4A7C15;
-constexpr uint64_t SPLIT64_C2 = 0xBF58476D1CE4E5B9;
-constexpr uint64_t SPLIT64_C3 = 0x94D049BB133111EB;
-auto to_local_hash(int flat_size, Element el, int offset) noexcept -> uint64_t {
-    auto seed = static_cast<uint64_t>((flat_size * static_cast<int>(el)) + offset);
-    uint64_t result = seed + SPLIT64_C1;
-    result = (result ^ (result >> SPLIT64_S1)) * SPLIT64_C2;
-    result = (result ^ (result >> SPLIT64_S2)) * SPLIT64_C3;
-    return result ^ (result >> SPLIT64_S3);
-}
-
 }    // namespace
 
 namespace detail {
@@ -95,6 +79,7 @@ TSPGameStateImpl<IsDeadlock, name_str>::TSPGameStateImpl(const std::string& boar
     is_deadlocked = false;
 
     // Parse
+    hash = {};
     for (int i = 2; i < static_cast<int>(seglist.size()); ++i) {
         int el_idx = std::stoi(seglist[static_cast<std::size_t>(i)]);
         if (el_idx < 0 || el_idx >= kNumElements) {
@@ -105,7 +90,7 @@ TSPGameStateImpl<IsDeadlock, name_str>::TSPGameStateImpl(const std::string& boar
         const auto el = static_cast<Element>(el_idx);
         visited_flags.push_back(el == Element::kCityUnvisited ? false : true);
         bool is_city = (el == Element::kCityUnvisited || el == Element::kAgentAtStartCity);
-        hash ^= is_city ? to_local_hash(rows * cols, Element::kCityUnvisited, agent_idx) : 0;
+        hash ^= is_city ? to_local_hash<4>(rows * cols, Element::kCityUnvisited, agent_idx) : Zobrist256{};
         board_is_city.push_back(is_city);
         remaining_cities += is_city;
         board_is_wall.push_back(el == Element::kWall);
@@ -119,7 +104,7 @@ TSPGameStateImpl<IsDeadlock, name_str>::TSPGameStateImpl(const std::string& boar
                 throw std::invalid_argument("More than one agent.");
             }
             agent_idx = i - 2;
-            hash ^= to_local_hash(rows * cols, Element::kAgent, agent_idx);
+            hash ^= to_local_hash<4>(rows * cols, Element::kAgent, agent_idx);
         }
     }
     if (agent_idx == -1) {
@@ -175,7 +160,7 @@ void TSPGameStateImpl<IsDeadlock, name_str>::apply_action(Action action) {
     };
 
     // Undo agent hash
-    hash ^= to_local_hash(rows * cols, get_agent_type(), agent_idx);
+    hash ^= to_local_hash<4>(rows * cols, get_agent_type(), agent_idx);
 
     // Move agent
     agent_idx = new_idx;
@@ -191,13 +176,14 @@ void TSPGameStateImpl<IsDeadlock, name_str>::apply_action(Action action) {
     remaining_cities -= set_visited_city;
     visited_flags[static_cast<std::size_t>(agent_idx)] = true;
     // Set start city if on city and start not set yet, else keep same
-    hash ^= set_visited_city ? to_local_hash(rows * cols, Element::kCityUnvisited, agent_idx) : 0;
-    hash ^= (set_visited_city && !set_start_city) ? to_local_hash(rows * cols, Element::kCityVisited, agent_idx) : 0;
-    hash ^= set_start_city ? to_local_hash(rows * cols, Element::kStartCity, agent_idx) : 0;
+    hash ^= set_visited_city ? to_local_hash<4>(rows * cols, Element::kCityUnvisited, agent_idx) : Zobrist256{};
+    hash ^= (set_visited_city && !set_start_city) ? to_local_hash<4>(rows * cols, Element::kCityVisited, agent_idx)
+                                                  : Zobrist256{};
+    hash ^= set_start_city ? to_local_hash<4>(rows * cols, Element::kStartCity, agent_idx) : Zobrist256{};
     start_city_idx = set_start_city ? agent_idx : start_city_idx;
 
     // Update agent hash
-    hash ^= to_local_hash(rows * cols, get_agent_type(), agent_idx);
+    hash ^= to_local_hash<4>(rows * cols, get_agent_type(), agent_idx);
 }
 
 template <bool IsDeadlock, StaticString name_str>
@@ -290,6 +276,11 @@ auto TSPGameStateImpl<IsDeadlock, name_str>::get_reward_signal() const noexcept 
 
 template <bool IsDeadlock, StaticString name_str>
 auto TSPGameStateImpl<IsDeadlock, name_str>::get_hash() const noexcept -> uint64_t {
+    return hash.low64();
+}
+
+template <bool IsDeadlock, StaticString name_str>
+auto TSPGameStateImpl<IsDeadlock, name_str>::get_hash256() const noexcept -> Zobrist256 {
     return hash;
 }
 
