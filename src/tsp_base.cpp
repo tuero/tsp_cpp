@@ -53,6 +53,15 @@ const std::unordered_map<Element, Pixel> kElementToPixelMap{
     {Element::kAgentAtCity, YELLOW}, {Element::kAgentAtStartCity, MAGENTA},
 };
 
+auto deadlock_hash_token(int flat_size) -> Zobrist256 {
+    Zobrist256 out{};
+    const uint64_t base = static_cast<uint64_t>(flat_size) * static_cast<uint64_t>(kNumElements + 1);
+    for (std::size_t lane = 0; lane < out.word.size(); ++lane) {
+        out.word[lane] = splitmix64(base + static_cast<uint64_t>(lane));
+    }
+    return out;
+}
+
 }    // namespace
 
 namespace detail {
@@ -89,22 +98,24 @@ TSPGameStateImpl<IsDeadlock, name_str>::TSPGameStateImpl(const std::string& boar
         }
         const auto el = static_cast<Element>(el_idx);
         visited_flags.push_back(el == Element::kCityUnvisited ? false : true);
-        bool is_city = (el == Element::kCityUnvisited || el == Element::kAgentAtStartCity);
-        hash ^= is_city ? to_local_hash<4>(rows * cols, Element::kCityUnvisited, agent_idx) : Zobrist256{};
+        const int idx = i - 2;
+        bool is_city = (el == Element::kCityUnvisited || el == Element::kCityVisited || el == Element::kStartCity ||
+                        el == Element::kAgentAtCity || el == Element::kAgentAtStartCity);
+        hash ^= is_city ? to_local_hash<4>(rows * cols, Element::kCityUnvisited, idx) : Zobrist256{};
         board_is_city.push_back(is_city);
         remaining_cities += is_city;
         board_is_wall.push_back(el == Element::kWall);
         // If starting at a city, undo count for city remaining and set the starting city index
         if (el == Element::kAgentAtStartCity) {
-            start_city_idx = i - 2;
+            start_city_idx = idx;
             --remaining_cities;
         }
         if (el == Element::kAgent || el == Element::kAgentAtStartCity) {
             if (agent_idx != -1) {
                 throw std::invalid_argument("More than one agent.");
             }
-            agent_idx = i - 2;
-            hash ^= to_local_hash<4>(rows * cols, Element::kAgent, agent_idx);
+            agent_idx = idx;
+            hash ^= to_local_hash<4>(rows * cols, el, agent_idx);
         }
     }
     if (agent_idx == -1) {
@@ -169,8 +180,12 @@ void TSPGameStateImpl<IsDeadlock, name_str>::apply_action(Action action) {
     bool set_start_city = on_city && start_city_idx == -1;
     // Deadlocked if we revisit a city that is not starting city
     if constexpr (IsDeadlock) {
+        const bool was_deadlocked = is_deadlocked;
         is_deadlocked = is_deadlocked ||
                         (on_city && visited_flags[static_cast<std::size_t>(agent_idx)] && agent_idx != start_city_idx);
+        if (!was_deadlocked && is_deadlocked) {
+            hash ^= deadlock_hash_token(rows * cols);
+        }
     }
     reward_signal = set_visited_city;
     remaining_cities -= set_visited_city;
